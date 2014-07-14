@@ -1,0 +1,31 @@
+{
+  "name": "redis-pattern-subscriber",
+  "version": "0.0.0",
+  "description": "Clean subscribe / unsubscribe to redis channels by pattern.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "coverage": "istanbul cover test",
+    "test": "node test"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "grape": "^1.0.0",
+    "istanbul": "^0.3.0"
+  },
+  "dependencies": {
+    "grape": "^1.0.0",
+    "istanbul": "^0.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iamalarner/redis-pattern-subscriber.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iamalarner/redis-pattern-subscriber/issues"
+  },
+  "homepage": "https://github.com/iamalarner/redis-pattern-subscriber"
+}
