@@ -22,7 +22,10 @@ require
     var subscriber = createSubscriber(logger);
 
     // subscribe to a pattern
-    var unsubscribe = subscribe(client, pattern, callback);
+    var emitter = subscribe(client, pattern, callback);
+
+    // listen to messages
+    emitter.on('message', callback);
 
 where:
  - client is a redis client
@@ -31,20 +34,22 @@ where:
 
 ## example
 
-
     var createSubscriber = require('redis-pattern-subscriber');
     var subscriber = createSubscriber(logger);
 
-    var emitter = subscribe(client, 'abc123', function(error){
+    var emitter = subscribe(client, 'abc123', function(error, unsubscribe){
         if(error){
             //subscription failed, do something.
         }
 
         // subscription succeeded
+
+        // ... later ...
+        unsubscribe();
+
     });
 
     emitter.on('message', function(message){
         // do something with message
     });
 
-    emitter.unsubscribe();

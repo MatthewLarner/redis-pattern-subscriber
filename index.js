@@ -5,7 +5,7 @@ module.exports = function(logger) {
         logger = console;
     }
 
-    function unsubscribe(client, pattern, callback) {
+    function unsubscribePattern(client, pattern, callback) {
         client.punsubscribe(pattern, function(error){
             if (error) {
                 logger.error(error);
@@ -13,12 +13,13 @@ module.exports = function(logger) {
             }
 
             logger.info('Unsubscribed from ' + pattern);
-            return callback(null, 'Unsubscribed from ' + pattern);
+
+            callback();
         });
     }
 
-    return function(client, pattern, callback) {
-        if (!callback) {
+    return function(client, pattern, subscribeCallback) {
+        if (!subscribeCallback) {
             throw 'No callback provided to subscribe to pattern: ' + pattern;
         }
         if (!pattern) {
@@ -30,6 +31,13 @@ module.exports = function(logger) {
 
         var emitter = new EventEmitter();
 
+        emitter.unsubscribe = function(){
+            if(!this._unsubscribe){
+                throw 'unsubscribe called before subscription';
+            }
+            this._unsubscribe.apply(this, arguments);
+        };
+
         function callbackInstance(matchedPattern, channel, message) {
             if(matchedPattern === pattern) {
                 emitter.emit('message', message, channel);
@@ -39,20 +47,22 @@ module.exports = function(logger) {
         client.psubscribe(pattern, function(error) {
             if (error) {
                 logger.error(error);
-                return callback(error);
+                return subscribeCallback(error);
             }
 
             //TO DO: investigate doing this only once
             client.on('pmessage', callbackInstance);
 
-            callback();
-        });
+            var unsubscribe = function(unsubscribeCallback) {
+                client.removeListener('pmessage', callbackInstance);
+                emitter.removeAllListeners('message');
+                unsubscribePattern(client, pattern, unsubscribeCallback);
+            };
 
-        emitter.unsubscribe = function(callback) {
-            client.removeListener('pmessage', callbackInstance);
-            emitter.removeAllListeners('message');
-            unsubscribe(client, pattern, callback);
-        };
+            emitter._unsubscribe = unsubscribe;
+
+            subscribeCallback(null, emitter);
+        });
 
         return emitter;
     };
