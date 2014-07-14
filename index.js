@@ -1,3 +1,5 @@
+var EventEmitter = require('events').EventEmitter;
+
 module.exports = function(logger) {
     if (!logger) {
         logger = console;
@@ -26,9 +28,11 @@ module.exports = function(logger) {
             throw 'No client provided';
         }
 
+        var emitter = new EventEmitter();
+
         function callbackInstance(matchedPattern, channel, message) {
             if(matchedPattern === pattern) {
-                return callback(null, message, channel);
+                emitter.emit('message', message, channel);
             }
         }
 
@@ -40,11 +44,16 @@ module.exports = function(logger) {
 
             //TO DO: investigate doing this only once
             client.on('pmessage', callbackInstance);
+
+            callback();
         });
 
-        return function unsubscribeFromPattern(callback) {
+        emitter.unsubscribe = function(callback) {
             client.removeListener('pmessage', callbackInstance);
+            emitter.removeAllListeners('message');
             unsubscribe(client, pattern, callback);
         };
+
+        return emitter;
     };
 };
