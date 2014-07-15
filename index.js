@@ -28,10 +28,6 @@ module.exports = function(logger) {
 
         var emitter = new EventEmitter();
 
-        emitter.unsubscribe = function(){
-            this._unsubscribe.apply(this, arguments);
-        };
-
         function callbackInstance(matchedPattern, channel, message) {
             if(matchedPattern === pattern) {
                 emitter.emit('message', message, channel);
@@ -47,13 +43,11 @@ module.exports = function(logger) {
             //TO DO: investigate doing this only once
             client.on('pmessage', callbackInstance);
 
-            var unsubscribe = function() {
+            emitter.unsubscribe = function() {
                 client.removeListener('pmessage', callbackInstance);
                 emitter.removeAllListeners('message');
                 unsubscribePattern(client, pattern);
             };
-
-            emitter._unsubscribe = unsubscribe;
 
             subscribeCallback(null, emitter);
         });
