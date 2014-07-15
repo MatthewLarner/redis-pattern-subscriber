@@ -16,10 +16,6 @@
     "grape": "^1.0.0",
     "istanbul": "^0.3.0"
   },
-  "dependencies": {
-    "grape": "^1.0.0",
-    "istanbul": "^0.3.0"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/iamalarner/redis-pattern-subscriber.git"
