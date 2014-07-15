@@ -1,22 +1,22 @@
+var EventEmitter = require('events').EventEmitter;
+
 module.exports = function(logger) {
     if (!logger) {
         logger = console;
     }
 
-    function unsubscribe(client, pattern, callback) {
+    function unsubscribePattern(client, pattern) {
         client.punsubscribe(pattern, function(error){
             if (error) {
                 logger.error(error);
-                return callback(error);
             }
 
             logger.info('Unsubscribed from ' + pattern);
-            return callback(null, 'Unsubscribed from ' + pattern);
         });
     }
 
-    return function(client, pattern, callback) {
-        if (!callback) {
+    return function(client, pattern, subscribeCallback) {
+        if (!subscribeCallback) {
             throw 'No callback provided to subscribe to pattern: ' + pattern;
         }
         if (!pattern) {
@@ -26,25 +26,30 @@ module.exports = function(logger) {
             throw 'No client provided';
         }
 
+        var emitter = new EventEmitter();
+
         function callbackInstance(matchedPattern, channel, message) {
             if(matchedPattern === pattern) {
-                return callback(null, message, channel);
+                emitter.emit('message', message, channel);
             }
         }
 
         client.psubscribe(pattern, function(error) {
             if (error) {
                 logger.error(error);
-                return callback(error);
+                return subscribeCallback(error);
             }
 
             //TO DO: investigate doing this only once
             client.on('pmessage', callbackInstance);
-        });
 
-        return function unsubscribeFromPattern(callback) {
-            client.removeListener('pmessage', callbackInstance);
-            unsubscribe(client, pattern, callback);
-        };
+            emitter.unsubscribe = function() {
+                client.removeListener('pmessage', callbackInstance);
+                emitter.removeAllListeners('message');
+                unsubscribePattern(client, pattern);
+            };
+
+            subscribeCallback(null, emitter);
+        });
     };
 };

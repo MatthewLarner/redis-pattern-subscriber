@@ -11,19 +11,27 @@ module.exports = function() {
     };
 
     clientMock.psubscribe = function(pattern, callback) {
+        var client = this;
+
         this._patterns[pattern] = true;
 
-        return callback(this._nextError);
+        setTimeout(function(){
+            callback(client._nextError);
+        });
     };
 
     clientMock.punsubscribe = function(pattern, callback) {
+        var client = this;
+
         if (!this._patterns[pattern]) {
             return callback('subscription does not exist');
         }
 
         this._patterns[pattern] = false;
 
-        return callback(this._nextError);
+        setTimeout(function(){
+            callback(client._nextError);
+        });
     };
 
     clientMock.on = function() {

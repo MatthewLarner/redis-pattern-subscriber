@@ -13,36 +13,49 @@ test('gets correct message', function(t) {
     var client = createClient(),
         testPattern = 'test',
         testPattern2 = 'test 2',
-        testMessage = 'the message',
-        testCallback = function(error, message) {
-            t.equal(message, testMessage, 'got correct message');
+        testMessage = 'the message';
+
+    patternSubscriber(client, testPattern, function(error, emitter){
         t.notOk(error, 'should not error');
 
-        };
+        emitter.on('message', function(message) {
+            t.equal(message, testMessage, 'got correct message');
+        });
 
-    patternSubscriber(client, testPattern, testCallback);
-    client.mockPublish(testPattern, null, testMessage);
-    client.mockPublish(testPattern2, null, testMessage);
+        client.mockPublish(testPattern, null, testMessage);
+        client.mockPublish(testPattern2, null, testMessage);
+    });
 });
 
 test('unsubscribes correctly', function(t) {
-    t.plan(4);
+    t.plan(5);
     var client = createClient(),
         testPattern = 'test',
-        testMessage = 'the message',
-        expectedMessage = 'Unsubscribed from ' + testPattern,
-        testCallback = function(error, message) {
-            t.equal(message, testMessage, 'got correct message');
-        };
+        testMessage = 'the message';
 
-    var unsubscribe = patternSubscriber(client, testPattern, testCallback);
-    client.mockPublish(testPattern, null, testMessage);
-    unsubscribe(function(error, message){
+    patternSubscriber(client, testPattern, function(error, emitter){
+        t.notOk(error, 'should not error');
+
+        emitter.on('message', function(message) {
+            t.equal(message, testMessage, 'got correct message');
+        });
+
+        client.mockPublish(testPattern, null, testMessage);
+
+        if('message' in emitter._events){
+            t.pass('emitter has events bound');
+        }
+
+        emitter.unsubscribe();
         t.pass('Unsubscribed');
         t.notOk(error, 'should not error');
-        t.equal(message, expectedMessage, 'got correct unsubscribe message');
         client.mockPublish(testPattern, null, testMessage);
+
+        if('message' in emitter._events){
+            t.fail('emitter still has events bound');
+        }
     });
+
 });
 
 test('throws error without client', function(t) {
@@ -78,21 +91,48 @@ test('throws error without callback', function(t) {
     }, 'error thrown as expected');
 });
 
-test('handles subscribe and unsubscibe errors', function(t) {
-    t.plan(5);
+test('handles subscribe errors', function(t) {
+    t.plan(1);
     var client = createClient(),
         testPattern = 'test',
-        testError = 'Error!',
-        testCallback = function(error, message) {
-            t.equal(error, testError, 'got correct message');
-            t.notOk(message, 'should not get message');
-        };
+        testError = 'Error!';
 
-        client._nextError = testError;
-        var unsubscribe = patternSubscriber(client, testPattern, testCallback);
-        unsubscribe(function(error, message){
-            t.pass('unsubscribed');
-            t.equal(error, testError, 'got correct message');
-            t.notOk(message, 'should not get message');
+    client._nextError = testError;
+
+    patternSubscriber(client, testPattern, function(error){
+        t.equal(error, testError, 'got correct error');
+    });
+});
+
+test('handles multiple clients correctly', function(t) {
+    t.plan(5);
+    var client = createClient(),
+        client2 = createClient(),
+        testPattern = 'test',
+        testMessage = 'the message';
+
+    patternSubscriber(client, testPattern, function(error, emitter){
+        t.notOk(error, 'should not error');
+
+        emitter.on('message', function(message) {
+            t.equal(message, testMessage, 'got correct message');
+        });
+
+        client.mockPublish(testPattern, null, testMessage);
+        client2.mockPublish(testPattern, null, testMessage);
+
+        if('message' in emitter._events){
+            t.pass('emitter has events bound');
+        }
+
+        emitter.unsubscribe();
+        t.pass('Unsubscribed');
+        t.notOk(error, 'should not error');
+        client2.mockPublish(testPattern, null, testMessage);
+        client.mockPublish(testPattern, null, testMessage);
+
+        if('message' in emitter._events){
+            t.fail('emitter still has events bound');
+        }
     });
 });
