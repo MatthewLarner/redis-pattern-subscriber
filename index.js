@@ -5,19 +5,13 @@ module.exports = function(logger) {
         logger = console;
     }
 
-    function unsubscribePattern(client, pattern, callback) {
-        if(!callback) {
-            callback = function(){};
-        }
-
+    function unsubscribePattern(client, pattern) {
         client.punsubscribe(pattern, function(error){
             if (error) {
                 logger.error(error);
-                return callback(error);
             }
 
             logger.info('Unsubscribed from ' + pattern);
-            callback(null, 'Unsubscribed from ' + pattern);
         });
     }
 
@@ -35,9 +29,6 @@ module.exports = function(logger) {
         var emitter = new EventEmitter();
 
         emitter.unsubscribe = function(){
-            if(!this._unsubscribe){
-                throw 'unsubscribe called before subscription';
-            }
             this._unsubscribe.apply(this, arguments);
         };
 
@@ -56,17 +47,15 @@ module.exports = function(logger) {
             //TO DO: investigate doing this only once
             client.on('pmessage', callbackInstance);
 
-            var unsubscribe = function(unsubscribeCallback) {
+            var unsubscribe = function() {
                 client.removeListener('pmessage', callbackInstance);
                 emitter.removeAllListeners('message');
-                unsubscribePattern(client, pattern, unsubscribeCallback);
+                unsubscribePattern(client, pattern);
             };
 
             emitter._unsubscribe = unsubscribe;
 
             subscribeCallback(null, emitter);
         });
-
-        return emitter;
     };
 };
