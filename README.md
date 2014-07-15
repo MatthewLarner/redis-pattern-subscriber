@@ -35,21 +35,56 @@ where:
 ## example
 
     var createSubscriber = require('redis-pattern-subscriber');
-    var subscriber = createSubscriber(logger);
+    var subscribe = createSubscriber(logger);
 
-    var emitter = subscribe(client, 'abc123', function(error, unsubscribe){
+    // Function Scope
+
+    subscribe(client, 'abc123', function(error, subscription){
         if(error){
             //subscription failed, do something.
         }
 
         // subscription succeeded
 
-        // ... later ...
-        unsubscribe();
+        subscription.on('message', function(message, channel) {
+            // do something with message
 
+            if(message === 'destroy') {
+                subscription.unsubscribe();
+            }
+        });
+
+        // ... or later ...
+        subscription.unsubscribe();
     });
 
-    emitter.on('message', function(message){
+    // Variable
+
+    var subscription = subscribe(client, 'a*redis*pattern', function(error){
+        if(error) {
+            //subscription failed, do something.
+        }
+    });
+
+    subscription.on('message', function(message, channel) {
+            // do something with message
+
+        if(message === 'destroy'){
+            this.unsubscribe();
+        }
+    });
+
+    // Chaining
+
+    subscribe(client, 'abc123*', function(error){
+        if(error) {
+            //subscription failed, do something.
+        }
+    }).on('message', function(message, channel) {
         // do something with message
-    });
 
+        if(message === 'destroy'){
+            subscription.unsubscribe();
+            this.unsubscribe();
+        }
+    });
