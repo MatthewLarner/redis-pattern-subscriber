@@ -6,6 +6,10 @@ module.exports = function(logger) {
     }
 
     function unsubscribePattern(client, pattern, callback) {
+        if(!callback) {
+            callback = function(){};
+        }
+
         client.punsubscribe(pattern, function(error){
             if (error) {
                 logger.error(error);
@@ -13,8 +17,7 @@ module.exports = function(logger) {
             }
 
             logger.info('Unsubscribed from ' + pattern);
-
-            callback();
+            callback(null, 'Unsubscribed from ' + pattern);
         });
     }
 
