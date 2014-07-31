@@ -8,7 +8,7 @@ module.exports = function(logger) {
     function unsubscribePattern(client, pattern) {
         client.punsubscribe(pattern, function(error){
             if (error) {
-                logger.error(error);
+                return logger.error(error);
             }
 
             logger.info('Unsubscribed from ' + pattern);
@@ -39,6 +39,8 @@ module.exports = function(logger) {
                 logger.error(error);
                 return subscribeCallback(error);
             }
+
+            logger.info('Subscribed to ' + pattern);
 
             //TO DO: investigate doing this only once
             client.on('pmessage', callbackInstance);
